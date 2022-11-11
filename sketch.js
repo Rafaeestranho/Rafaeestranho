@@ -1,169 +1,146 @@
-const Engine = Matter.Engine;
-const Render = Matter.Render;
-const World = Matter.World;
-const Bodies = Matter.Bodies;
-const Constraint = Matter.Constraint;
-const Body = Matter.Body;
-const Composites = Matter.Composites;
-const Composite = Matter.Composite;
+var bow , arrow,  background;
+var bowImage, arrowImage, green_balloonImage, red_balloonImage, pink_balloonImage ,blue_balloonImage, backgroundImage;
 
+var score=0;
 
-let engine;
-let world;
-var plank;
-var ground;
-var higherground;
-var con;
-var con2;
-var rope;
-var bubble,bubble_img;
+function preload(){
+  backgroundImage = loadImage("background0.png");
+  arrowImage = loadImage("arrow0.png");
+  bowImage = loadImage("bow0.png");
+  green_balloonImage = loadImage("green_balloon0.png");
+  pink_balloonImage = loadImage("pink_balloon0.png");
+  blue_balloonImage = loadImage("blue_balloon0.png");
 
-function preload()
-{
-  bubble_img = loadImage("bubble.png")
-  bg_img = loadImage('background.png');
-  food = loadImage('melon.png');
-  rabbit = loadImage('Rabbit-01.png');
+//red_balloonImage = loadImage("red_balloon0.png");
+  // red_balloonImage = loadImage("redballoon0.png");
+  // red_balloonImage = loadImage("red_balloon0");
+red_balloonImage = loadImage("red_balloon0.png");
 
-  blink = loadAnimation("blink_1.png","blink_2.png","blink_3.png");
-  eat = loadAnimation("eat_0.png" , "eat_1.png","eat_2.png","eat_3.png","eat_4.png");
-  sad = loadAnimation("sad_1.png","sad_2.png","sad_3.png");
-  star_img = loadImage('star.png');
-  
-  blink.playing = true;
-  eat.playing = true;
-  sad.playing = true;
-  sad.looping= false;
-  eat.looping = false; 
 }
+
+
 
 function setup() {
-  createCanvas(500,800);
-  frameRate(80);
-  engine = Engine.create();
-  world = engine.world;
-
-   var fruit_options = {
-    restitution: 0.8
-  }
+  createCanvas(400, 400);
   
-  ground =new Ground(250,height-10,width,20);
-  fruit = Bodies.circle(100,400,15,fruit_options);
-  World.add(world,fruit);
+  //criando fundo
+  scene = createSprite(0,0,400,400);
+  scene.addImage(backgroundImage);
+  scene.scale = 2.5
   
-  bubble = createSprite(290,460,20,20);
-  bubble.addImage(bubble_img);
-  bubble.scale = 0.1;
+  // criando arco para atirar flecha
+  bow = createSprite(380,220,20,50);
+  bow.addImage(bowImage); 
+  bow.scale = 1;
   
-  //sprite do coelhinho
-  blink.frameDelay = 20;
-  eat.frameDelay = 20;
-  bunny = createSprite(270,100,100,100);
-  bunny.addImage(rabbit);
-  bunny.scale = 0.2;
-  higherground =new Ground(300,170,100,10);
-
-  bunny.addAnimation('blinking',blink);
-  bunny.addAnimation('eating',eat);
-  bunny.addAnimation('crying',sad);
-  bunny.changeAnimation('blinking');
-
-  rope = new Rope(4,{x:230,y:330});
-  rope2 = new Rope(4,{x:50,y:450});
-  con = new Link(rope,fruit);
-  con2 = new Link(rope2,fruit);
-
-  //botão 1
-  button = createImg('cut_btn.png');
-  button.position(200,320);
-  button.size(50,50);
-
-  button2 = createImg('cut_btn.png');
-  button2.position(30,420);
-  button2.size(50,50);
-
-  //button2.Clicked(drop);
-  
-  //button2.mousePress(drop);
-  
-  //button2.mouseClick(drop);
-
-  button2.mouseClicked(drop);
-
-  ellipseMode(RADIUS);
+   score = 0
 }
 
-function draw() 
-{
-  background(51);
-  image(bg_img,0,0,width,height);
-  Engine.update(engine);
-  
-  push();
-  imageMode(CENTER);
-  if(fruit!=null){
-    image(food,fruit.position.x,fruit.position.y,70,70);
-  }
-  pop();
+function draw() {
+ background(0);
+  // movendo chão
+    scene.velocityX = -3 
 
-  ground.show();
-  higherground.show();
-  rope.show();
-  rope2.show();
-
-  if(collide(fruit,bunny,80)==true)
-  {
-   remove_rope();
-   bubble.visible = false;
-    World.remove(engine.world,fruit);
-    fruit = null;
-    //bunny.change('eating');
-
-    bunny.changeAnimation('eating');
-
-    //bunny.changeAnimation();
-
-    //bunny.Animation('eating');
-  }
-  
-  if(collide(fruit,bubble,40) == true)
-    {
-      engine.world.gravity.y = -1;
-      bubble.position.x = fruit.position.x;
-      bubble.position.y = fruit.position.y;
+    if (scene.x < 0){
+      scene.x = scene.width/2;
     }
-
+  
+  //movendo flecha
+  bow.y = World.mouseY
+  
+   // soltar flecha quando barra de espaço é pressionada
+  if (keyDown("space")) {
+    createArrow();
+    
+  }
+  
+  //criando inimigos continuamente
+ 
+   var select_balloon = Math.round(random(1,4));
+  // var select_balloon = random(1,4);
+  // var select_balloon = Math.round(random());
+  // var select_balloon = Math.round(random(1,4,2));
+  
+  if (World.frameCount % 100 == 0) {
+    if (select_balloon == 1) {
+      redBalloon();
+    } else if (select_balloon == 2) {
+      greenBalloon();
+    } else if (select_balloon == 3) {
+      blueBalloon();
+    } else {
+      pinkBalloon();
+    }
+  }
+  
   drawSprites();
-
+  text("Pontuação: "+ score, 300,50)
 }
 
-function drop()
-{
-  rope2.break();
-  con2.dettach();
-  con2 = null; 
+
+// Criando flechas para arco
+ function createArrow() {
+  var arrow= createSprite(100, 100, 60, 10);
+  arrow.addImage(arrowImage);
+  arrow.x = 360;
+  arrow.y=bow.y;
+  arrow.velocityX = -4;
+  arrow.lifetime = 100;
+  arrow.scale = 0.3;
 }
 
-function remove_rope()
-{
-  rope.break();
-  con.dettach();
-  con = null; 
+ /*function redBalloon() {
+   var red = createSprite(0,50, 10, 10);
+   red.addImage(red_balloonImage);
+   red.velocityX = 3;
+   red.lifetime = 150;
+   red.scale = 0.1;
+ }*/
+
+function redBalloon() {
+   var red = createSprite(Math.round(random(20, 370)),50, 10, 10);
+   red.addImage(red_balloonImage);
+   red.velocityX = 3;
+   red.lifetime = 150;
+   red.scale = 0.1;
+  }
+
+ /*function redBalloon() {
+   var red = createSprite(0,Math.round(random(20, 370)), 10, 10);
+   red.addImage(red_balloonImage);
+   red.velocityX = 3;
+   red.lifetime = 150;
+   red.scale = 0.1;
+ }*/
+
+/*function redBalloon() {
+ var red = createSprite(0, 10, Math.round(random(20, 370)) , 10);
+   red.addImage(red_balloonImage);
+   red.velocityX = 3;
+   red.lifetime = 150;
+   red.scale = 0.1;
+ }*/
+
+function blueBalloon() {
+  var blue = createSprite(0,Math.round(random(20, 370)), 10, 10);
+  blue.addImage(blue_balloonImage);
+  blue.velocityX = 3;
+  blue.lifetime = 150;
+  blue.scale = 0.1;
 }
 
-function collide(body,sprite,x)
-{
-  if(body!=null)
-        {
-         var d = dist(body.position.x,body.position.y,sprite.position.x,sprite.position.y);
-          if(d<=x)
-            {
-              
-               return true; 
-            }
-            else{
-              return false;
-            }
-         }
+function greenBalloon() {
+  var green = createSprite(0,Math.round(random(20, 370)), 10, 10);
+  green.addImage(green_balloonImage);
+  green.velocityX = 3;
+  green.lifetime = 150;
+  green.scale = 0.1;
 }
 
+function pinkBalloon() {
+  var pink = createSprite(0,Math.round(random(20, 370)), 10, 10);
+  pink.addImage(pink_balloonImage);
+  pink.velocityX = 3;
+  pink.lifetime = 150;
+  pink.scale = 1;
+}
